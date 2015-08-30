@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width"/>
+<title>js13k2015</title>
+<style>
+
+html,
+body
+{
+	margin: 0; padding: 0;
+	background: #000;
+	overflow: hidden;
+}
+
+canvas
+{
+	position: fixed;
+	left: 0; right: 0;
+	top: 0; bottom: 0;
+}
+
+</style>
+</head>
+<body>
+<canvas id="Canvas">Sorry, your browser cannot render this content.</canvas>
+<script>
+
+"use strict";
+
+var canvas,
+	ctx,
+	width,
+	height,
+	centerX,
+	centerY,
+	now,
+	factor,
+	last,
+	mapWidth = 4,
+	mapHeight = 4;
+
+function drawMap()
+{
+	var size = Math.min( width, height )*.9 | 0,
+		cell = size/Math.max( mapWidth, mapHeight ) | 0,
+		hsize = size >> 1,
+		left = centerX-hsize,
+		top = centerY-hsize;
+
+	for( var r = mapHeight, y = top; r--; y += cell )
+		for( var c = mapWidth, x = left; c--; x += cell )
+		{
+			var v = 128+((now+r+c)*16 % 128);
+
+			ctx.fillStyle = "rgb("+v+","+v+","+v+")";
+			ctx.fillRect( x, y, cell, cell );
+		}
+}
+
+function draw()
+{
+	requestAnimationFrame( draw );
+
+	now = Date.now();
+	factor = (now-last)/16;
+	last = now;
+
+	ctx.fillStyle = "#000";
+	ctx.fillRect( 0, 0, width, height );
+
+	drawMap();
+}
+
+function resize()
+{
+	canvas.width = width = window.innerWidth;
+	canvas.height = height = window.innerHeight;
+
+	centerX = width >> 1;
+	centerY = height >> 1;
+}
+
+function init()
+{
+	var d = document;
+
+	if( !(canvas = d.getElementById( "Canvas" )) ||
+		!(ctx = canvas.getContext( "2d", { alpha: false } )) )
+		return;
+
+	window.onresize = resize;
+	resize();
+
+	last = Date.now()-16;
+	draw();
+}
+
+window.onload = init;
+
+</script>
+</body>
+</html>
