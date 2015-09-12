@@ -32,17 +32,29 @@ var M = Math,
 	D = document,
 	W = window,
 	resources = {
-		player: { rect: {/*player*/x:0,y:0,w:16,h:16} },
+		player: { rect: {/*player*/x:0,y:0,w:14,h:14} },
 		wall: { rect: {/*wall*/x:0,y:16,w:16,h:16} },
 		corridor: { rect: {/*corridor*/x:0,y:32,w:16,h:16} },
 		stairs: { rect: {/*stairs*/x:0,y:48,w:16,h:16} },
+		entry: { rect: {/*entry*/x:0,y:64,w:16,h:16} },
+		exit: { rect: {/*exit*/x:0,y:80,w:16,h:16} },
+		enemy: { rect: {/*enemy*/x:0,y:96,w:16,h:16} },
 	},
 	level = 0,
 	levels = [
 		function()
 		{
-			generate( 16 );
-		}],
+			generate( 16, 8 );
+		},
+		function()
+		{
+			generate( 24, 16 );
+		},
+		function()
+		{
+			generate( 32, 24 );
+		},
+		],
 	atlasWidth,
 	atlas,
 	canvas,
@@ -73,9 +85,9 @@ var M = Math,
 	viewY,
 	viewOffset,
 	viewSkip,
-	pointerLength = 0,
-	pointerX = [],
-	pointerY = [],
+	pointersLength = 0,
+	pointersX = [],
+	pointersY = [],
 	keysDown = [],
 	entitiesLength = 0,
 	entities = [],
@@ -83,20 +95,33 @@ var M = Math,
 
 function reveal( c, r )
 {
-	r |= 0;
 	c |= 0;
+	r |= 0;
 
-	var line = r*mapCols,
-		idx = line+M.max( c-2, 0 ),
-		last = line+M.min( c+3, mapCols );
+	var tp = r*mapCols;
 
-	for( ; idx < last; ++idx )
-	{
-		var t = map[idx];
+	for( var t = tp;
+		t > 0 && map[t+c].sprite;
+		t -= mapCols )
+		tp = t;
 
-		if( t.sprite )
-			t.visible = true;
-	}
+	var lf = tp+M.max( c-2, 0 ),
+		rg = tp+M.min( c+3, mapCols ),
+		skip = mapCols-(rg-lf);
+
+	for( var stop = (r+1)*mapCols; lf < stop; lf += skip, rg += mapCols )
+		for( ; lf < rg; ++lf )
+		{
+			var t= map[lf];
+
+			if( t.sprite )
+				t.visible = true;
+		}
+}
+
+function tile( c, r )
+{
+	return map[(r | 0)*mapCols+(c | 0)];
 }
 
 function addEntity( e )
@@ -113,12 +138,20 @@ function setPlayer( c, r )
 	player = {
 		sprite: "player",
 		x: c*cellSize,
-		y: r*cellSize };
+		y: (r+1)*cellSize-sprites.player.centerY };
 
 	addEntity( player );
 	reveal( c, r );
 }
 
+function addEnemy( c, r )
+{
+	addEntity( {
+		sprite: "enemy",
+		x: c*cellSize,
+		y: r*cellSize } );
+}
+/*
 function carve( l, t, r, b, sprite )
 {
 	var o = t*mapCols+l,
@@ -128,32 +161,46 @@ function carve( l, t, r, b, sprite )
 	for( var y = b-t; y--; o += step )
 		for( var x = w; x--; ++o )
 			map[o].sprite = sprite;
+}*/
+function carve( s, dx, dy )
+{
+	var l = s.l-dx,
+		r = s.r-dx,
+		t = s.t-dy,
+		b = s.b-dy,
+		o = t*mapCols+l,
+		w = r-l,
+		step = mapCols-w;
+
+	for( var y = b-t; y--; o += step )
+		for( var x = w; x--; ++o )
+		{
+			var m = map[o];
+
+			m.sprite = s.sprite;
+			m.stairs = s.stairs;
+		}
 }
 
-function addRoom( rooms, fl, d, w, h, sprite )
+function addSpace( spaces, fl, d, w, h, sprite )
 {
-	var rl = d ? fl.l-w : fl.r,
-		rt = fl.b-h,
-		rr = rl+w,
-		rb = rt+h;
+	var l = d ? fl.l-w : fl.r,
+		t = fl.b-h,
+		r = l+w,
+		b = t+h;
 
-	fl.l = M.min( fl.l, rl );
-	fl.r = M.max( fl.r, rr );
-	fl.t = M.min( fl.t, rt );
-	fl.b = M.max( fl.b, rb );
+	fl.l = M.min( fl.l, l );
+	fl.r = M.max( fl.r, r );
+	fl.t = M.min( fl.t, t );
+	fl.b = M.max( fl.b, b );
 
-	rooms.push( {
-		l: rl,
-		t: rt,
-		r: rr,
-		b: rb,
-		sprite: sprite } );
+	spaces.push( { l: l, t: t, r: r, b: b, sprite: sprite } );
 }
 
-function generate( n )
+function generate( rl, el )
 {
-	var rooms = [],
-		average = M.ceil( M.sqrt( n ) ),
+	var spaces = [],
+		average = M.ceil( M.sqrt( rl ) ),
 		lastStairs = M.random()*average*8 | 0,
 		ml = 0,
 		mt = 0,
@@ -167,23 +214,23 @@ function generate( n )
 
 	for( ;; )
 	{
-		var first = rooms.length;
+		var first = spaces.length;
 
-		for( var to = n-M.min(
-				n,
+		for( var to = rl-M.min(
+				rl,
 				M.max(
 					2,
 					M.round( M.random()*average ) ) );
-			n > to;
-			--n )
+			rl > to;
+			--rl )
 		{
 			var d = false;
 
-			if( rooms.length != first )
+			if( spaces.length != first )
 			{
 				d = M.random() > .5;
-				addRoom(
-					rooms,
+				addSpace(
+					spaces,
 					fl,
 					d,
 					M.max( 1, M.random()*5 | 0 ),
@@ -191,8 +238,8 @@ function generate( n )
 					sprites.corridor );
 			}
 
-			addRoom(
-				rooms,
+			addSpace(
+				spaces,
 				fl,
 				d,
 				M.max( 3, M.random()*9 | 0 ),
@@ -205,7 +252,7 @@ function generate( n )
 		mt = M.min( mt, fl.t );
 		mb = M.max( mb, fl.b );
 
-		if( n < 1 )
+		if( rl < 1 )
 			break;
 
 		var sl = fl.l+1,
@@ -218,11 +265,12 @@ function generate( n )
 		lastStairs = fl.l;
 
 		var t = fl.t-M.max( 1, M.random()*3 | 0 );
-		rooms.push( {
+		spaces.push( {
 			l: fl.l,
 			t: t,
 			r: fl.l+1,
 			b: fl.b,
+			stairs: true,
 			sprite: sprites.stairs } );
 
 		fl.b = t;
@@ -238,15 +286,47 @@ function generate( n )
 	mapTop = height-mapHeight >> 1;
 
 	for( var n = mapCols*mapRows; n--; )
-		map[n] = { visible: true };//false };
+		map[n] = { visible: false };
 
-	for( var n = 0, l = rooms.length; n < l; ++n )
+	for( var n = el, sl = spaces.length; n--; )
 	{
-		var r = rooms[n];
-		carve( r.l-ml, r.t-mt, r.r-ml, r.b-mt, r.sprite );
+		var s;
+		while( (s = spaces[M.max( 2, M.random()*sl | 0 )]).stairs );
+		s.enemies = s.enemies ? ++s.enemies : 1;
+	}
+
+	for( var n = 0, l = spaces.length-1; n <= l; ++n )
+	{
+		var s = spaces[n],
+			e = s.enemies;
+
+		//carve( s.l-ml, s.t-mt, s.r-ml, s.b-mt, s.sprite );
+		carve( s, ml, mt );
+
+		if( e > 0 )
+		{
+			var w = s.r-s.l,
+				sp = w/e,
+				x = s.l-ml,
+				y = s.b-mt-1;
+
+			for( var e = s.enemies; e--; x += sp )
+				addEnemy( x+.5, y+.5 );
+		}
 
 		if( n == 0 )
-			setPlayer( (r.l+r.r >> 1)-ml-.5, r.b-mt-.5 );
+		{
+			var c = (s.l+s.r >> 1)-ml,
+				r = s.b-mt-1;
+
+			map[r*mapCols+c].sprite = sprites.entry;
+			tile( c, r ).sprite = sprites.entry;
+			setPlayer( c, r );
+		}
+		else if( n == l )
+			tile(
+				(s.l+s.r >> 1)-ml,
+				s.b-mt-1 ).sprite = sprites.exit;
 	}
 }
 
@@ -256,6 +336,10 @@ function drawEntities()
 	{
 		var e = entities[n],
 			s = sprites[e.sprite];
+
+		if( e != player &&
+			!map[(e.y/cellSize | 0)*mapCols+(e.x/cellSize | 0)].visible )
+			continue;
 
 		ctx.drawImage(
 			s,
@@ -275,12 +359,12 @@ function drawMap()
 			col < viewCols;
 			++col, x += cellSize, ++idx )
 		{
-			var tile = map[idx];
+			var t = map[idx];
 
-			if( tile.visible &&
-				tile.sprite )
+			if( t.visible &&
+				t.sprite )
 				ctx.drawImage(
-					tile.sprite,
+					t.sprite,
 					x | 0,
 					y | 0 );
 		}
@@ -362,26 +446,87 @@ function blocks( x, y )
 		y >= mapHeight ||
 		x < 0 ||
 		x >= mapWidth ||
-		!map[(y/cellSize | 0)*mapCols+(x/cellSize | 0)].sprite;
+		!tile( x/cellSize, y/cellSize ).sprite;
 }
 
-function moveBy( e, vx, vy )
+function moveBy( e, dx, dy )
 {
 	var x = e.x,
 		y = e.y,
-		xs = M.min( 1, vx )*cellSize,
-		ys = M.min( 1, vy )*cellSize;
+		col = x/cellSize,
+		row = y/cellSize,
+		stairs = tile( col, row ).stairs,
+		below = (row | 0)+1,
+		s = sprites[e.sprite],
+		base = s.centerY,
+		baseY = below*cellSize-base,
+		bottomY;
 
-	for( var p = M.abs( vx );
-		p > 0 && !blocks( x+xs, y );
-		--p, x += xs );
+	dx *= cellSize*factor;
 
-	for( var p = M.abs( vy );
-		p > 0 && !blocks( x, y+ys );
-		--p, y += ys );
+	if( stairs ||
+		(dy > 0 &&
+			below < mapRows &&
+			tile( col, below ).stairs) ||
+		(dy < 0 &&
+			y > baseY) )
+		dy *= cellSize*factor;
+	else
+		dy = 0;
 
-	e.vx = x-e.x;
-	e.vy = y-e.y;
+	for( var br = below, tl;
+		br < mapRows &&
+			(tl = tile( col, br )).sprite &&
+			!tl.stairs;
+		++br )
+		++below;
+
+	bottomY = below*cellSize-base;
+
+	var xs = M.min( 1, dx ),
+		ys = M.min( 1, dy ),
+		cx = s.centerX*.9 | 0,
+		cy = s.centerY*.9 | 0,
+		l = x-cx,
+		r = x+cx,
+		t = y-cy,
+		b = y+cy;
+
+	for( var nx = M.abs( dx ), ny = M.abs( dy );
+		(nx > 0 || ny > 0) &&
+			!blocks( l+xs, t+ys ) &&
+			!blocks( r+xs, t+ys ) &&
+			!blocks( l+xs, b+ys ) &&
+			!blocks( r+xs, b+ys );
+		--nx, --ny, l += xs, r += xs, t += ys, b+= ys )
+	{
+		if( nx > 0 )
+		{
+			x += xs;
+
+			if( y < bottomY &&
+				!tile( x/cellSize, y/cellSize ).stairs )
+			{
+				x -= xs;
+				xs = nx = 0;
+			}
+		}
+
+		if( ny > 0 )
+		{
+			y += ys;
+
+			if( !stairs &&
+				y < baseY )
+			{
+				y = baseY;
+				ys = 0;
+			}
+		}
+	}
+
+	e.dx = dx;
+	e.dy = dy;
 
 	e.x = x;
 	e.y = y;
@@ -389,27 +534,38 @@ function moveBy( e, vx, vy )
 
 function input()
 {
-	var vx = 0,
-		vy = 0,
+	var dx = 0,
+		dy = 0,
 		step = .03*factor;
 
-	if( pointerLength )
-		vx = pointerX[0]-mapLeft < player.x ? -step : step;
-	else if( keysDown[37] )
-		vx = -step;
-	else if( keysDown[39] )
-		vx = step;
-
-	if( vx || vy )
+	if( pointersLength )
 	{
-		moveBy( player, vx, vy );
+		dx = pointersX[0]-mapLeft < player.x ? -step : step;
+		dy = pointersY[0]-mapTop < player.y ? -step : step;
+	}
+	else
+	{
+		if( keysDown[37] )
+			dx = -step;
+		else if( keysDown[39] )
+			dx = step;
+
+		if( keysDown[38] )
+			dy = -step;
+		else if( keysDown[40] )
+			dy = step;
+	}
+
+	if( dx || dy )
+	{
+		moveBy( player, dx, dy );
 		reveal(
 			player.x/cellSize,
 			player.y/cellSize );
 		alignMap();
 	}
 	else
-		player.vx = player.vy = 0;
+		player.dx = player.dy = 0;
 }
 
 function run()
@@ -431,36 +587,36 @@ function setPointers( ev, down )
 	if( down < 1 )
 	{
 		// process remaining touches
-		if( pointerLength > 0 &&
+		if( pointersLength > 0 &&
 			e.touches &&
 			(down = e.touches.length) )
 			return setPointers( e, down );
 
-		pointerLength = 0;
+		pointersLength = 0;
 	}
 	else if( e.touches )
 	{
-		pointerLength = e.touches.length;
+		pointersLength = e.touches.length;
 
-		for( var n = 0; n < pointerLength; ++n )
+		for( var n = 0; n < pointersLength; ++n )
 		{
 			var t = e.touches[n];
 
-			pointerX[n] = t.pageX;
-			pointerY[n] = t.pageY;
+			pointersX[n] = t.pageX;
+			pointersY[n] = t.pageY;
 		}
 	}
 	else if( typeof e.clientX !== "undefined" )
 	{
-		pointerX[0] = e.clientX;
-		pointerY[0] = e.clientY;
-		pointerLength = 1;
+		pointersX[0] = e.clientX;
+		pointersY[0] = e.clientY;
+		pointersLength = 1;
 	}
 	else if( typeof e.pageX !== "undefined" )
 	{
-		pointerX[0] = e.pageX;
-		pointerY[0] = e.pageY;
-		pointerLength = 1;
+		pointersX[0] = e.pageX;
+		pointersY[0] = e.pageY;
+		pointersLength = 1;
 	}
 
 	e.preventDefault();
@@ -474,7 +630,7 @@ function pointerUp( ev )
 
 function pointerMove( ev )
 {
-	return setPointers( ev, pointerLength );
+	return setPointers( ev, pointersLength );
 }
 
 function pointerDown( ev )
@@ -631,7 +787,7 @@ function load()
 	atlas.onload = init;*/
 	atlas = D.createElement( "canvas" );
 	atlas.width = 16;
-	atlas.height = 64;
+	atlas.height = 112;
 	var x = atlas.getContext( "2d" );
 	x.fillStyle = "#6a9";
 	x.fillRect( 0, 0, 16, 16 );
@@ -641,6 +797,12 @@ function load()
 	x.fillRect( 0, 32, 16, 16 );
 	x.fillStyle = "#287";
 	x.fillRect( 0, 48, 16, 16 );
+	x.fillStyle = "#154";
+	x.fillRect( 0, 64, 16, 16 );
+	x.fillStyle = "#154";
+	x.fillRect( 0, 80, 16, 16 );
+	x.fillStyle = "#854";
+	x.fillRect( 0, 96, 16, 16 );
 	init();
 }
 
