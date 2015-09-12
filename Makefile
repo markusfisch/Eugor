@@ -25,3 +25,9 @@ atlas: $(SPRITES)
 			> tmp.html && \
 		mv tmp.html index.html && \
 		rm atlas.png
+
+check:
+	@echo $$(SIZE=`zip -r htdocs.zip htdocs -x '*.swp' &>/dev/null && \
+		stat --format '%s' htdocs.zip && \
+		rm -f htdocs.zip`; echo "$$SIZE bytes"; \
+		(( $$SIZE > 13312 )) && echo '> 13312 !!! TOO MUCH !!!' )
