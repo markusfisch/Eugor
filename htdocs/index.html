@@ -34,12 +34,14 @@ var M = Math,
 	resources = {
 		player: { rect: {/*player*/x:0,y:0,w:16,h:16} },
 		wall: { rect: {/*wall*/x:0,y:16,w:16,h:16} },
+		corridor: { rect: {/*corridor*/x:0,y:32,w:16,h:16} },
+		stairs: { rect: {/*stairs*/x:0,y:48,w:16,h:16} },
 	},
 	level = 0,
 	levels = [
 		function()
 		{
-			generate( 16, 16 );
+			generate( 16 );
 		}],
 	atlasWidth,
 	atlas,
@@ -117,73 +119,134 @@ function setPlayer( c, r )
 	reveal( c, r );
 }
 
-function carve( x, y, w, h )
+function carve( l, t, r, b, sprite )
 {
-	var o = y*mapCols+x,
-		skip = mapCols-w;
+	var o = t*mapCols+l,
+		w = r-l,
+		step = mapCols-w;
 
-	for( var y = h; y--; o += skip )
-		for( var e = o+w; o < e; ++o )
-			map[o].sprite = sprites.wall;
+	for( var y = b-t; y--; o += step )
+		for( var x = w; x--; ++o )
+			map[o].sprite = sprite;
 }
 
-function generate( cols, rows )
+function addRoom( rooms, fl, d, w, h, sprite )
 {
-	entities.length = map.length = 0;
+	var rl = d ? fl.l-w : fl.r,
+		rt = fl.b-h,
+		rr = rl+w,
+		rb = rt+h;
 
-	mapCols = cols;
-	mapRows = rows;
+	fl.l = M.min( fl.l, rl );
+	fl.r = M.max( fl.r, rr );
+	fl.t = M.min( fl.t, rt );
+	fl.b = M.max( fl.b, rb );
+
+	rooms.push( {
+		l: rl,
+		t: rt,
+		r: rr,
+		b: rb,
+		sprite: sprite } );
+}
+
+function generate( n )
+{
+	var rooms = [],
+		average = M.ceil( M.sqrt( n ) ),
+		lastStairs = M.random()*average*8 | 0,
+		ml = 0,
+		mt = 0,
+		mr = 0,
+		mb = 0,
+		fl = {
+			l: 0,
+			t: 0,
+			r: 0,
+			b: 0 };
+
+	for( ;; )
+	{
+		var first = rooms.length;
+
+		for( var to = n-M.min(
+				n,
+				M.max(
+					2,
+					M.round( M.random()*average ) ) );
+			n > to;
+			--n )
+		{
+			var d = false;
+
+			if( rooms.length != first )
+			{
+				d = M.random() > .5;
+				addRoom(
+					rooms,
+					fl,
+					d,
+					M.max( 1, M.random()*5 | 0 ),
+					1,
+					sprites.corridor );
+			}
+
+			addRoom(
+				rooms,
+				fl,
+				d,
+				M.max( 3, M.random()*9 | 0 ),
+				M.max( 2, M.random()*5 | 0 ),
+				sprites.wall );
+		}
+
+		ml = M.min( ml, fl.l );
+		mr = M.max( mr, fl.r );
+		mt = M.min( mt, fl.t );
+		mb = M.max( mb, fl.b );
+
+		if( n < 1 )
+			break;
+
+		var sl = fl.l+1,
+			sr = fl.r-2;
+
+		fl.l = fl.r =
+			M.abs( sl-lastStairs ) > M.abs( sr-lastStairs ) ?
+			sl : sr;
+
+		lastStairs = fl.l;
+
+		var t = fl.t-M.max( 1, M.random()*3 | 0 );
+		rooms.push( {
+			l: fl.l,
+			t: t,
+			r: fl.l+1,
+			b: fl.b,
+			sprite: sprites.stairs } );
+
+		fl.b = t;
+	}
+
+	entities.length = map.length = 0;
+	mapCols = mr-ml,
+	mapRows = mb-mt;
 
 	mapWidth = mapCols*cellSize;
 	mapHeight = mapRows*cellSize;
 	mapLeft = width-mapWidth >> 1;
 	mapTop = height-mapHeight >> 1;
 
-	for( var n = cols*rows; n--; )
+	for( var n = mapCols*mapRows; n--; )
 		map[n] = { visible: true };//false };
 
-	for( var x = 0, y = 0, vx = 1, lw = 0, lh = 0;; )
+	for( var n = 0, l = rooms.length; n < l; ++n )
 	{
-		var w = 2+(M.random()*8 | 0),
-			h = M.max( 1, (M.random() < .5 ? 1 : M.random()*4) | 0 );
+		var r = rooms[n];
+		carve( r.l-ml, r.t-mt, r.r-ml, r.b-mt, r.sprite );
 
-		if( vx < 0 )
-			x -= w;
-
-		/*if( lh > 0 &&
-			M.random() < .2 )
-		{
-			vx = M.random() > .5 ? -1 : 1;
-			y += lh;
-			nx = x = M.max( 0, (x+(lw-w)/2) | 0 );
-		}*/
-
-		if( x+w >= cols )
-		{
-			x = cols-w-1;
-			y += lh;// lh should be at least 2 here!
-			vx = -1;
-		}
-		else if( x < 0 )
-		{
-			x = 0;
-			y += lh;// lh should be at least 2 here!
-			vx = 1;
-		}
-
-		if( y+h >= rows )
-			break;
-
-		carve( x, y, w, h );
-
-		if( !lh )
-			setPlayer( x+w/2, y+h-.5 );
-
-		if( vx > 0 )
-			x += w;
-
-		lw = w;
-		lh = h;
+		if( n == 0 )
+			setPlayer( (r.l+r.r >> 1)-ml-.5, r.b-mt-.5 );
 	}
 }
 
@@ -567,11 +630,17 @@ function load()
 	atlas.src = "data:image/png;base64,XXXX";
 	atlas.onload = init;*/
 	atlas = D.createElement( "canvas" );
+	atlas.width = 16;
+	atlas.height = 64;
 	var x = atlas.getContext( "2d" );
 	x.fillStyle = "#6a9";
 	x.fillRect( 0, 0, 16, 16 );
 	x.fillStyle = "#265";
 	x.fillRect( 0, 16, 16, 16 );
+	x.fillStyle = "#276";
+	x.fillRect( 0, 32, 16, 16 );
+	x.fillStyle = "#287";
+	x.fillRect( 0, 48, 16, 16 );
 	init();
 }
 
