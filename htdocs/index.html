@@ -457,6 +457,11 @@ function drawEntities()
 
 			if( now-e.last > frq )
 			{
+				if( e === player &&
+					a == "Fight" &&
+					f % m == 1 )
+					e.fighting = false;
+
 				e.frame = ++f;
 				e.last = now;
 
@@ -512,11 +517,6 @@ function drawEntities()
 			}
 		}
 
-if( !s )
-{
-	console.log( "["+name+"] doesn't exist" );
-	continue;
-}
 		ctx.drawImage(
 			s,
 			(sx-s.centerX) | 0,
@@ -624,6 +624,12 @@ function alignMap()
 	calculateVisibleCells();
 }
 
+function fight()
+{
+	player.fighting = true;
+	player.frame = 0;
+}
+
 function blocks( x, y )
 {
 	return y < 0 ||
@@ -638,41 +644,41 @@ function moveBy( e, dx, dy )
 	dx = M.min( 1, dx )*cellSize;
 	dy = M.min( 1, dy )*cellSize;
 
-	if( e === player )
+	var fx = e.x+dx,
+		fy = e.y+dy;
+
+	for( var n = entitiesLength; n--; )
 	{
-		var fx = e.x+dx,
-			fy = e.y+dy;
+		var en = entities[n];
 
-		for( var n = entitiesLength; n--; )
+		if( en === e )
+			continue;
+
+		var ex = en.x,
+			ey = en.y,
+			edx,
+			edy;
+
+		if( en.hp > 0 &&
+			(edy = M.abs( ey-fy )) < attackDistance &&
+			(edx = M.abs( ex-fx )) < attackDistance )
 		{
-			var en = entities[n],
-				ex = en.x,
-				ey = en.y,
-				edx,
-				edy;
+			en.dx = fx-ex;
+			en.vx = en.dx > 0 ? speed : -speed;
 
-			if( en.hp > 0 &&
-				en != e &&
-				(edy = M.abs( ey-fy )) < attackDistance &&
-				(edx = M.abs( ex-fx )) < attackDistance )
+			if( !en.fighting )
 			{
-				en.dx = fx-ex;
-				en.vx = en.dx > 0 ? speed : -speed;
-
-				if( !en.fighting )
-				{
-					en.fighting = true;
-					en.frame = 0;
-					en.last = now;
-				}
-
-				if( edx < blockDistance &&
-					edy < blockDistance )
-					return;
+				en.fighting = true;
+				en.frame = 0;
+				en.last = now;
 			}
-			else
-				en.isHit = en.fighting = false;
+
+			if( edx < blockDistance &&
+				edy < blockDistance )
+				return;
 		}
+		else
+			en.isHit = en.fighting = false;
 	}
 
 	var s = sprites[e.sprite],
@@ -753,13 +759,6 @@ function input()
 {
 	if( player.hp < 1 )
 	{
-		if( !player.dead )
-		{
-			player.sprite = "rip";
-			player.frame = 0;
-			player.dead = true;
-		}
-
 		if( pointersLength > 0 ||
 			keysDown[32] ||
 			keysDown[13] )
@@ -780,6 +779,9 @@ function input()
 	{
 		dx = pointersX[0]-mapLeft < player.x ? -step : step;
 		dy = pointersY[0]-mapTop < player.y ? -step : step;
+
+		if( pointersLength > 1 )
+			fight();
 	}
 	else
 	{
@@ -794,10 +796,7 @@ function input()
 			dy = step;
 
 		if( keysDown[32] )
-		{
-			player.fighting = true;
-			player.frame = 0;
-		}
+			fight();
 	}
 
 	if( dx || dy )
