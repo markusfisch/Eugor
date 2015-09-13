@@ -223,7 +223,7 @@ function addEnemy( c, r )
 		fights: e.fight,
 		hits: e.hit,
 		x: c*cellSize,
-		y: r*cellSize } );
+		y: r*cellSize+((cellSize-sprites[e.sprite].height) >> 1) } );
 }
 
 function carve( s, dx, dy )
