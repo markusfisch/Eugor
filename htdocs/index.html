@@ -32,14 +32,58 @@ var M = Math,
 	D = document,
 	W = window,
 	resources = {
-		player: { rect: {/*player*/x:0,y:0,w:14,h:14} },
-		wall: { rect: {/*wall*/x:0,y:16,w:16,h:16} },
-		corridor: { rect: {/*corridor*/x:0,y:32,w:16,h:16} },
-		stairs: { rect: {/*stairs*/x:0,y:48,w:16,h:16} },
-		entry: { rect: {/*entry*/x:0,y:64,w:16,h:16} },
-		exit: { rect: {/*exit*/x:0,y:80,w:16,h:16} },
-		enemy: { rect: {/*enemy*/x:0,y:96,w:16,h:16} },
+		boss:{rect:{/*boss*/x:0,y:0,w:47,h:23}},
+		exit:{rect:{/*exit*/x:32,y:23,w:16,h:16},back:true},
+		monster:{rect:{/*monster*/x:63,y:23,w:13,h:13}},
+		monsterFightRight0:{rect:{/*monsterfight0*/x:48,y:23,w:15,h:14}},
+		monsterFightRight1:{rect:{/*monsterfight1*/x:88,y:11,w:13,h:12}},
+		monsterFightLeft0:{rect:{/*monsterfight0*/x:48,y:23,w:15,h:14},mirror:true},
+		monsterFightLeft1:{rect:{/*monsterfight1*/x:88,y:11,w:13,h:12},mirror:true},
+		monsterHitRight:{rect:{/*monsterhit*/x:168,y:23,w:10,h:12}},
+		monsterHitLeft:{rect:{/*monsterhit*/x:168,y:23,w:10,h:12},mirror:true},
+		monsterWalkRight0:{rect:{/*monsterwalk0*/x:131,y:23,w:11,h:13}},
+		monsterWalkRight1:{rect:{/*monsterwalk1*/x:102,y:0,w:12,h:13}},
+		monsterWalkLeft0:{rect:{/*monsterwalk0*/x:131,y:23,w:11,h:13},mirror:true},
+		monsterWalkLeft1:{rect:{/*monsterwalk1*/x:102,y:0,w:12,h:13},mirror:true},
+		player:{rect:{/*player*/x:152,y:0,w:9,h:14}},
+		playerClimb0:{rect:{/*playerclimb0*/x:87,y:23,w:11,h:15}},
+		playerClimb1:{rect:{/*playerclimb1*/x:143,y:0,w:9,h:14}},
+		playerClimb2:{rect:{/*playerclimb2*/x:142,y:23,w:10,h:14}},
+		playerFightRight0:{rect:{/*playerfight0*/x:76,y:0,w:12,h:14}},
+		playerFightRight1:{rect:{/*playerfight1*/x:47,y:0,w:15,h:14}},
+		playerFightLeft0:{rect:{/*playerfight0*/x:76,y:0,w:12,h:14},mirror:true},
+		playerFightLeft1:{rect:{/*playerfight1*/x:47,y:0,w:15,h:14},mirror:true},
+		playerHitRight0:{rect:{/*playerhit0*/x:62,y:0,w:14,h:14}},
+		playerHitRight1:{rect:{/*playerhit1*/x:88,y:0,w:14,h:11}},
+		playerHitLeft0:{rect:{/*playerhit0*/x:62,y:0,w:14,h:14},mirror:true},
+		playerHitLeft1:{rect:{/*playerhit1*/x:88,y:0,w:14,h:11},mirror:true},
+		playerWalkRight0:{rect:{/*playerwalk0*/x:110,y:23,w:11,h:14}},
+		playerWalkRight1:{rect:{/*playerwalk1*/x:98,y:23,w:12,h:13}},
+		playerWalkRight2:{rect:{/*playerwalk2*/x:76,y:23,w:11,h:15}},
+		playerWalkRight3:{rect:{/*playerwalk3*/x:133,y:0,w:10,h:14}},
+		playerWalkLeft0:{rect:{/*playerwalk0*/x:110,y:23,w:11,h:14},mirror:true},
+		playerWalkLeft1:{rect:{/*playerwalk1*/x:98,y:23,w:12,h:13},mirror:true},
+		playerWalkLeft2:{rect:{/*playerwalk2*/x:76,y:23,w:11,h:15},mirror:true},
+		playerWalkLeft3:{rect:{/*playerwalk3*/x:133,y:0,w:10,h:14},mirror:true},
+		rip:{rect:{/*rip*/x:175,y:0,w:7,h:13}},
+		skeleton:{rect:{/*skeleton*/x:168,y:0,w:7,h:15}},
+		skeletonFightRight0:{rect:{/*skeletonfight0*/x:121,y:23,w:10,h:15}},
+		skeletonFightRight1:{rect:{/*skeletonfight1*/x:124,y:0,w:9,h:15}},
+		skeletonFightLeft0:{rect:{/*skeletonfight0*/x:121,y:23,w:10,h:15},mirror:true},
+		skeletonFightLeft1:{rect:{/*skeletonfight1*/x:124,y:0,w:9,h:15},mirror:true},
+		skeletonHitRight:{rect:{/*skeletonhit*/x:114,y:0,w:10,h:15}},
+		skeletonHitLeft:{rect:{/*skeletonhit*/x:114,y:0,w:10,h:15},mirror:true},
+		skeletonWalkRight0:{rect:{/*skeletonwalk0*/x:161,y:0,w:7,h:15}},
+		skeletonWalkRight1:{rect:{/*skeletonwalk1*/x:160,y:23,w:8,h:14}},
+		skeletonWalkRight2:{rect:{/*skeletonwalk2*/x:152,y:23,w:8,h:15}},
+		skeletonWalkLeft0:{rect:{/*skeletonwalk0*/x:161,y:0,w:7,h:15},mirror:true},
+		skeletonWalkLeft1:{rect:{/*skeletonwalk1*/x:160,y:23,w:8,h:14},mirror:true},
+		skeletonWalkLeft2:{rect:{/*skeletonwalk2*/x:152,y:23,w:8,h:15},mirror:true},
+		stairs:{rect:{/*stairs*/x:16,y:23,w:16,h:16},back:true},
+		wall:{rect:{/*wall*/x:0,y:23,w:16,h:16},back:true},
 	},
+	skeleton = { sprite: "skeleton", walk: 3, fight: 2, hit: 1 },
+	monster = { sprite: "monster", walk: 2, fight: 2, hit: 1 },
 	level = 0,
 	levels = [
 		function()
@@ -66,6 +110,7 @@ var M = Math,
 	centerY,
 	scaleFactor,
 	cellSize,
+	attackDistance,
 	sprites = {},
 	map = [],
 	mapCols,
@@ -126,8 +171,23 @@ function tile( c, r )
 
 function addEntity( e )
 {
+	e.hp = e.hp || 10;
+
+	e.fighting =
+	e.isHit = false;
+
+	e.frame =
+	e.last = 0;
+
+	e.dx = e.dx || 0;
+	e.dy = e.dy || 0;
 	e.vx = e.vx || 0;
 	e.vy = e.vy || 0;
+
+	e.fightsFreq = 320/e.fights | 0;
+	e.hitsFreq = 320/e.hits | 0;
+	e.walksFreq = 320/e.walks | 0;
+	e.climbsFreq = 320/e.climbs | 0;
 
 	entities.push( e );
 	entitiesLength = entities.length;
@@ -137,6 +197,11 @@ function setPlayer( c, r )
 {
 	player = {
 		sprite: "player",
+		climbs: 3,
+		walks: 4,
+		fights: 2,
+		hits: 2,
+		hp: 100,
 		x: c*cellSize,
 		y: (r+1)*cellSize-sprites.player.centerY };
 
@@ -146,22 +211,17 @@ function setPlayer( c, r )
 
 function addEnemy( c, r )
 {
+	var e = Math.random() > .5 ? skeleton : monster;
+
 	addEntity( {
-		sprite: "enemy",
+		sprite: e.sprite,
+		walks: e.walk,
+		fights: e.fight,
+		hits: e.hit,
 		x: c*cellSize,
 		y: r*cellSize } );
 }
-/*
-function carve( l, t, r, b, sprite )
-{
-	var o = t*mapCols+l,
-		w = r-l,
-		step = mapCols-w;
 
-	for( var y = b-t; y--; o += step )
-		for( var x = w; x--; ++o )
-			map[o].sprite = sprite;
-}*/
 function carve( s, dx, dy )
 {
 	var l = s.l-dx,
@@ -235,7 +295,7 @@ function generate( rl, el )
 					d,
 					M.max( 1, M.random()*5 | 0 ),
 					1,
-					sprites.corridor );
+					sprites.wall );
 			}
 
 			addSpace(
@@ -300,7 +360,6 @@ function generate( rl, el )
 		var s = spaces[n],
 			e = s.enemies;
 
-		//carve( s.l-ml, s.t-mt, s.r-ml, s.b-mt, s.sprite );
 		carve( s, ml, mt );
 
 		if( e > 0 )
@@ -319,14 +378,17 @@ function generate( rl, el )
 			var c = (s.l+s.r >> 1)-ml,
 				r = s.b-mt-1;
 
-			map[r*mapCols+c].sprite = sprites.entry;
-			tile( c, r ).sprite = sprites.entry;
+			map[r*mapCols+c].sprite = sprites.exit;
+			tile( c, r ).sprite = sprites.exit;
 			setPlayer( c, r );
 		}
 		else if( n == l )
-			tile(
-				(s.l+s.r >> 1)-ml,
-				s.b-mt-1 ).sprite = sprites.exit;
+		{
+			var t = tile( (s.l+s.r >> 1)-ml, s.b-mt-1 );
+
+			t.sprite = sprites.exit;
+			t.exit = true;
+		}
 	}
 }
 
@@ -335,16 +397,70 @@ function drawEntities()
 	for( var n = 0; n < entitiesLength; ++n )
 	{
 		var e = entities[n],
-			s = sprites[e.sprite];
+			x = e.x,
+			y = e.y,
+			sx = mapLeft+x,
+			sy = mapTop+y;
 
 		if( e != player &&
-			!map[(e.y/cellSize | 0)*mapCols+(e.x/cellSize | 0)].visible )
+			!tile( x/cellSize, y/cellSize ).visible )
 			continue;
 
+		var name = e.sprite,
+			a = null,
+			m = 0,
+			frq;
+
+		if( e.fighting )
+		{
+			a = "Fight";
+			m = e.fights;
+			frq = e.fightsFreq;
+		}
+		else if( e.isHit )
+		{
+			a = "Hit";
+			m = e.hits;
+			frq = e.hitsFreq;
+		}
+		else if( e.vy != 0 )
+		{
+			a = "Climb";
+			m = e.climbs;
+			frq = e.climbsFreq;
+		}
+		else if( e.vx != 0 )
+		{
+			a = "Walk";
+			m = e.walks;
+			frq = e.walksFreq;
+		}
+
+		if( a )
+		{
+			var f = e.frame;
+
+			if( now-e.last > frq )
+			{
+				e.frame = ++f;
+				e.last = now;
+			}
+
+			if( a != "Climb" )
+				a += e.dx > 0 ? "Right" : "Left";
+
+			name += a+(f % m);
+		}
+
+		/*if( e !== player &&
+			(e.vx != 0 || e.vy != 0) )
+			moveBy( e, e.vx, e.vy );*/
+
+		var s = sprites[name];
 		ctx.drawImage(
 			s,
-			(mapLeft+e.x-s.centerX) | 0,
-			(mapTop+e.y-s.centerY) | 0 );
+			(sx-s.centerX) | 0,
+			(sy-s.centerY) | 0 );
 	}
 }
 
@@ -451,85 +567,99 @@ function blocks( x, y )
 
 function moveBy( e, dx, dy )
 {
-	var x = e.x,
-		y = e.y,
-		col = x/cellSize,
-		row = y/cellSize,
-		stairs = tile( col, row ).stairs,
-		below = (row | 0)+1,
-		s = sprites[e.sprite],
-		base = s.centerY,
-		baseY = below*cellSize-base,
-		bottomY;
+	dx = M.min( 1, dx )*cellSize;
+	dy = M.min( 1, dy )*cellSize;
 
-	dx *= cellSize*factor;
-
-	if( stairs ||
-		(dy > 0 &&
-			below < mapRows &&
-			tile( col, below ).stairs) ||
-		(dy < 0 &&
-			y > baseY) )
-		dy *= cellSize*factor;
-	else
-		dy = 0;
-
-	for( var br = below, tl;
-		br < mapRows &&
-			(tl = tile( col, br )).sprite &&
-			!tl.stairs;
-		++br )
-		++below;
-
-	bottomY = below*cellSize-base;
-
-	var xs = M.min( 1, dx ),
-		ys = M.min( 1, dy ),
-		cx = s.centerX*.9 | 0,
-		cy = s.centerY*.9 | 0,
-		l = x-cx,
-		r = x+cx,
-		t = y-cy,
-		b = y+cy;
-
-	for( var nx = M.abs( dx ), ny = M.abs( dy );
-		(nx > 0 || ny > 0) &&
-			!blocks( l+xs, t+ys ) &&
-			!blocks( r+xs, t+ys ) &&
-			!blocks( l+xs, b+ys ) &&
-			!blocks( r+xs, b+ys );
-		--nx, --ny, l += xs, r += xs, t += ys, b+= ys )
+	if( e === player )
 	{
-		if( nx > 0 )
+		var fx = e.x+dx,
+			fy = e.y+dy;
+
+		for( var n = entitiesLength; n--; )
 		{
-			x += xs;
+			var en = entities[n],
+				ex = en.x,
+				ey = en.y;
 
-			if( y < bottomY &&
-				!tile( x/cellSize, y/cellSize ).stairs )
+			if( en != e &&
+				M.abs( ey-fy ) < attackDistance &&
+				M.abs( ex-fx ) < attackDistance )
 			{
-				x -= xs;
-				xs = nx = 0;
+				en.dx = fx-ex;
+				en.vx = en.dx/(en.dx*en.dx);
+				en.fighting = true;
+				return;
 			}
-		}
 
-		if( ny > 0 )
-		{
-			y += ys;
-
-			if( !stairs &&
-				y < baseY )
-			{
-				y = baseY;
-				ys = 0;
-			}
+			en.fighting = false;
 		}
 	}
 
-	e.dx = dx;
-	e.dy = dy;
+	var s = sprites[e.sprite],
+		cx = s.centerX-1,
+		cy = s.centerY-1,
+		x = e.x,
+		y = e.y,
+		l = x-cx,
+		t = y-cy,
+		r = x+cx,
+		b = y+cy,
+		col = x/cellSize | 0,
+		row = y/cellSize | 0,
+		below = row+1,
+		base = s.centerY,
+		baseY = below*cellSize-base,
+		tl = tile( col, row ),
+		onStairs = tl.stairs,
+		stairsBelow = below < mapRows ?
+			tile( col, below ).stairs :
+			false;
 
-	e.x = x;
-	e.y = y;
+	if( tl.exit )
+	{
+		level = ++level % levels.length;
+		levels[level]();
+		alignMap();
+		return;
+	}
+
+	if( !blocks( l+dx, t ) &&
+		!blocks( r+dx, t ) &&
+		!blocks( l+dx, b ) &&
+		!blocks( r+dx, b ) )
+	{
+		for( var br = below, tl;
+			br < mapRows &&
+				(tl = tile( col, br )).sprite;
+			++br )
+			++below;
+
+		var bottomY = below*cellSize-base;
+
+		if( !onStairs ||
+			tile( (x+dx)/cellSize, y/cellSize ).stairs ||
+			y >= bottomY )
+		{
+			e.dx = dx;
+			e.vx = dx;
+			e.x = x+dx;
+		}
+	}
+
+	if( (onStairs || stairsBelow) &&
+		!blocks( l, t+dy ) &&
+		!blocks( r, t+dy ) &&
+		!blocks( l, b+dy ) &&
+		!blocks( r, b+dy ) )
+	{
+		if( !onStairs )
+			y = M.max( baseY, y+dy );
+		else
+			y += dy;
+
+		e.vy = e.dy = y-e.y;
+		e.y = y;
+	}
 }
 
 function input()
@@ -554,6 +684,9 @@ function input()
 			dy = -step;
 		else if( keysDown[40] )
 			dy = step;
+
+		if( keysDown[32] )
+			player.fighting = true;
 	}
 
 	if( dx || dy )
@@ -565,7 +698,7 @@ function input()
 		alignMap();
 	}
 	else
-		player.dx = player.dy = 0;
+		player.vx = player.vy = 0;
 }
 
 function run()
@@ -675,7 +808,9 @@ function scaleSprite( r )
 	var offset = rc.y*(atlasWidth << 2)+(rc.x << 2),
 		skip = (atlasWidth-rc.w) << 2,
 		xs = 0,
-		xf = scaleFactor;
+		xf = scaleFactor,
+		alpha = r.back ? 80 : 255,
+		blockSize = M.max( scaleFactor-1, 1 );
 
 	if( r.mirror )
 	{
@@ -695,11 +830,12 @@ function scaleSprite( r )
 				b = atlas[offset++],
 				a = atlas[offset++];
 
-			if( a == 0 )
+			if( a == 0 || r > 200 )
 				continue;
 
-			x.fillStyle = 'rgba('+r+','+g+','+b+','+(a/255)+')';
-			x.fillRect( sx, sy, scaleFactor, scaleFactor );
+			//x.fillStyle = 'rgba('+r+','+g+','+b+','+(alpha/255)+')';
+			x.fillStyle = 'rgba(0,0,0,'+(alpha/255)+')';
+			x.fillRect( sx, sy, blockSize, blockSize );
 		}
 
 	return c;
@@ -714,11 +850,14 @@ function resize()
 	centerY = height >> 1;
 
 	cellSize = resources.wall.rect.h;
-	scaleFactor = M.max( 1, M.round( M.min( width, height )/70/cellSize ) );
+	scaleFactor = M.max( 1, M.round( M.min( width, height )/5/cellSize ) );
 	cellSize *= scaleFactor;
+	attackDistance = cellSize*.7 | 0;
 
 	for( var name in resources )
 		sprites[name] = scaleSprite( resources[name] );
+
+	ctx.fillStyle = "#94d294";
 
 	levels[level]();
 	alignMap();
@@ -753,7 +892,6 @@ function init()
 		!(ctx = canvas.getContext( "2d", { alpha: false } )) )
 		return;
 
-	ctx.fillStyle = "#000";
 	decompressAtlas();
 
 	W.onresize = scheduleResize;
@@ -782,28 +920,9 @@ function init()
 
 function load()
 {
-	/*atlas = new Image();
-	atlas.src = "data:image/png;base64,XXXX";
-	atlas.onload = init;*/
-	atlas = D.createElement( "canvas" );
-	atlas.width = 16;
-	atlas.height = 112;
-	var x = atlas.getContext( "2d" );
-	x.fillStyle = "#6a9";
-	x.fillRect( 0, 0, 16, 16 );
-	x.fillStyle = "#265";
-	x.fillRect( 0, 16, 16, 16 );
-	x.fillStyle = "#276";
-	x.fillRect( 0, 32, 16, 16 );
-	x.fillStyle = "#287";
-	x.fillRect( 0, 48, 16, 16 );
-	x.fillStyle = "#154";
-	x.fillRect( 0, 64, 16, 16 );
-	x.fillStyle = "#154";
-	x.fillRect( 0, 80, 16, 16 );
-	x.fillStyle = "#854";
-	x.fillRect( 0, 96, 16, 16 );
-	init();
+	atlas = new Image();
+	atlas.src = "atlas.png";
+	atlas.onload = init;
 }
 
 W.onload = load;

@@ -19,14 +19,9 @@ live:
 atlas: $(SPRITES)
 	cd $(HTDOCS) && \
 		mkatlas ../$(SPRITES) | \
-		patchatlas index.html && \
-		sed -e "s_data:image/png;base64,[/+a-zA-Z0-9=]*_data:image/png;base64,$$(base64 -w 0 atlas.png)_" \
-			< index.html \
-			> tmp.html && \
-		mv tmp.html index.html && \
-		rm atlas.png
+		patchatlas index.html
 
-check:
+size:
 	@echo $$(SIZE=`zip -r htdocs.zip htdocs -x '*.swp' &>/dev/null && \
 		stat --format '%s' htdocs.zip && \
 		rm -f htdocs.zip`; echo "$$SIZE bytes"; \
