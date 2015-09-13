@@ -9,8 +9,6 @@ OPTIONS = \
 	--times \
 	--compress
 
-all: atlas live
-
 live:
 	rsync $(OPTIONS) \
 		$(HTDOCS)/* \
@@ -20,6 +18,9 @@ atlas: $(SPRITES)
 	cd $(HTDOCS) && \
 		mkatlas ../$(SPRITES) | \
 		patchatlas index.html
+
+pack:
+	zip -r htdocs.zip htdocs -x '*.swp'
 
 size:
 	@echo $$(SIZE=`zip -r htdocs.zip htdocs -x '*.swp' &>/dev/null && \
