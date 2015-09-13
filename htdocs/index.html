@@ -89,7 +89,7 @@ var M = Math,
 	levels = [
 		function()
 		{
-			generate( 16, 8 );
+			generate( 16, 8, true );
 		},
 		function()
 		{
@@ -261,7 +261,7 @@ function addSpace( spaces, fl, d, w, h, sprite )
 	spaces.push( { l: l, t: t, r: r, b: b, sprite: sprite } );
 }
 
-function generate( rl, el )
+function generate( rl, el, gameStart )
 {
 	var spaces = [],
 		average = M.ceil( M.sqrt( rl ) ),
@@ -385,6 +385,16 @@ function generate( rl, el )
 			map[r*mapCols+c].sprite = sprites.exit;
 			tile( c, r ).sprite = sprites.exit;
 			setPlayer( c, r );
+
+			if( gameStart )
+			{
+				addEntity( {
+					sprite: "boss",
+					x: (c+1.75)*cellSize | 0,
+					y: r*cellSize+(cellSize*.5 | 0),
+					hp: -1 } );
+				gameStart = false;
+			}
 		}
 		else if( n == l )
 		{
@@ -417,12 +427,31 @@ function drawEntities()
 			sx = mapLeft+x,
 			sy = mapTop+y;
 
-		if( (e != player && !tile( x/cellSize, y/cellSize ).visible) ||
-			e.hp < 1 )
+		if( (e != player && !tile( x/cellSize, y/cellSize ).visible) )
 			continue;
 
-		var name = e.sprite,
-			a = null,
+		var name = e.sprite;
+
+		if( e.hp < 1 )
+		{
+			if( e === player )
+				name = "rip";
+
+			if( name == "boss" ||
+				name == "rip" )
+			{
+				var s = sprites[name];
+
+				ctx.drawImage(
+					s,
+					(sx-s.centerX) | 0,
+					(sy-s.centerY) | 0 );
+			}
+
+			continue;
+		}
+
+		var a = null,
 			m = 0,
 			frq;
 
