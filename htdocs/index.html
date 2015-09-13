@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
 <head>
+<meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width"/>
 <title>js13k2015</title>
 <style>
@@ -39,8 +40,8 @@ var M = Math,
 		monsterFightRight1:{rect:{/*monsterfight1*/x:88,y:11,w:13,h:12}},
 		monsterFightLeft0:{rect:{/*monsterfight0*/x:48,y:23,w:15,h:14},mirror:true},
 		monsterFightLeft1:{rect:{/*monsterfight1*/x:88,y:11,w:13,h:12},mirror:true},
-		monsterHitRight:{rect:{/*monsterhit*/x:168,y:23,w:10,h:12}},
-		monsterHitLeft:{rect:{/*monsterhit*/x:168,y:23,w:10,h:12},mirror:true},
+		monsterHitRight0:{rect:{/*monsterhit*/x:168,y:23,w:10,h:12}},
+		monsterHitLeft0:{rect:{/*monsterhit*/x:168,y:23,w:10,h:12},mirror:true},
 		monsterWalkRight0:{rect:{/*monsterwalk0*/x:131,y:23,w:11,h:13}},
 		monsterWalkRight1:{rect:{/*monsterwalk1*/x:102,y:0,w:12,h:13}},
 		monsterWalkLeft0:{rect:{/*monsterwalk0*/x:131,y:23,w:11,h:13},mirror:true},
@@ -71,8 +72,8 @@ var M = Math,
 		skeletonFightRight1:{rect:{/*skeletonfight1*/x:124,y:0,w:9,h:15}},
 		skeletonFightLeft0:{rect:{/*skeletonfight0*/x:121,y:23,w:10,h:15},mirror:true},
 		skeletonFightLeft1:{rect:{/*skeletonfight1*/x:124,y:0,w:9,h:15},mirror:true},
-		skeletonHitRight:{rect:{/*skeletonhit*/x:114,y:0,w:10,h:15}},
-		skeletonHitLeft:{rect:{/*skeletonhit*/x:114,y:0,w:10,h:15},mirror:true},
+		skeletonHitRight0:{rect:{/*skeletonhit*/x:114,y:0,w:10,h:15}},
+		skeletonHitLeft0:{rect:{/*skeletonhit*/x:114,y:0,w:10,h:15},mirror:true},
 		skeletonWalkRight0:{rect:{/*skeletonwalk0*/x:161,y:0,w:7,h:15}},
 		skeletonWalkRight1:{rect:{/*skeletonwalk1*/x:160,y:23,w:8,h:14}},
 		skeletonWalkRight2:{rect:{/*skeletonwalk2*/x:152,y:23,w:8,h:15}},
@@ -111,6 +112,7 @@ var M = Math,
 	scaleFactor,
 	cellSize,
 	attackDistance,
+	blockDistance,
 	sprites = {},
 	map = [],
 	mapCols,
@@ -136,7 +138,9 @@ var M = Math,
 	keysDown = [],
 	entitiesLength = 0,
 	entities = [],
-	player;
+	player,
+	speed = .03,
+	lastHit = 0;
 
 function reveal( c, r )
 {
@@ -171,7 +175,7 @@ function tile( c, r )
 
 function addEntity( e )
 {
-	e.hp = e.hp || 10;
+	e.hp = e.hp || 20;
 
 	e.fighting =
 	e.isHit = false;
@@ -392,6 +396,17 @@ function generate( rl, el )
 	}
 }
 
+function hit( e )
+{
+	--e.hp;
+	e.isHit = true;
+	e.last = now;
+	e.frame = 0;
+
+	if( player === e )
+		lastHit = now;
+}
+
 function drawEntities()
 {
 	for( var n = 0; n < entitiesLength; ++n )
@@ -402,8 +417,8 @@ function drawEntities()
 			sx = mapLeft+x,
 			sy = mapTop+y;
 
-		if( e != player &&
-			!tile( x/cellSize, y/cellSize ).visible )
+		if( (e != player && !tile( x/cellSize, y/cellSize ).visible) ||
+			e.hp < 1 )
 			continue;
 
 		var name = e.sprite,
@@ -411,17 +426,17 @@ function drawEntities()
 			m = 0,
 			frq;
 
-		if( e.fighting )
-		{
-			a = "Fight";
-			m = e.fights;
-			frq = e.fightsFreq;
-		}
-		else if( e.isHit )
+		if( e.isHit )
 		{
 			a = "Hit";
 			m = e.hits;
 			frq = e.hitsFreq;
+		}
+		else if( e.fighting )
+		{
+			a = "Fight";
+			m = e.fights;
+			frq = e.fightsFreq;
 		}
 		else if( e.vy != 0 )
 		{
@@ -444,6 +459,8 @@ function drawEntities()
 			{
 				e.frame = ++f;
 				e.last = now;
+
+				e.isHit = false;
 			}
 
 			if( a != "Climb" )
@@ -452,11 +469,54 @@ function drawEntities()
 			name += a+(f % m);
 		}
 
-		/*if( e !== player &&
-			(e.vx != 0 || e.vy != 0) )
-			moveBy( e, e.vx, e.vy );*/
+		var s = sprites[name],
+			edy;
 
-		var s = sprites[name];
+		if( e !== player )
+		{
+			if( player.hp > 0 &&
+				(edy = M.abs( player.y-e.y )) < cellSize )
+			{
+				e.dx = player.x-e.x;
+				e.vx = e.dx > 0 ? speed : -speed;
+
+				var adx = M.abs( e.dx );
+
+				if( adx < attackDistance )
+				{
+					if( e.frame % e.fights == 0 )
+					{
+						if( player.fighting )
+							hit( e )
+						else
+							hit( player );
+					}
+				}
+				else if( adx > blockDistance )
+				{
+					var ex = e.x+e.vx*cellSize*factor,
+						ey = e.y,
+						cx = s.centerX,
+						el = ex-cx,
+						er = ex+cx;
+
+					if( !blocks( el, ey ) &&
+						!blocks( er, ey ) )
+						e.x = ex;
+				}
+			}
+			else if( e.fighting )
+			{
+				e.fighting = false;
+				e.vx = 0;
+			}
+		}
+
+if( !s )
+{
+	console.log( "["+name+"] doesn't exist" );
+	continue;
+}
 		ctx.drawImage(
 			s,
 			(sx-s.centerX) | 0,
@@ -488,6 +548,14 @@ function drawMap()
 
 function draw()
 {
+	var r = now-lastHit;
+
+	if( r < 500 )
+		r = 148+M.round( 107/500*(500-r) );
+	else
+		r = 148;
+
+	ctx.fillStyle = "rgb("+r+",210,148)";
 	ctx.fillRect( 0, 0, width, height );
 
 	drawMap();
@@ -579,19 +647,31 @@ function moveBy( e, dx, dy )
 		{
 			var en = entities[n],
 				ex = en.x,
-				ey = en.y;
+				ey = en.y,
+				edx,
+				edy;
 
-			if( en != e &&
-				M.abs( ey-fy ) < attackDistance &&
-				M.abs( ex-fx ) < attackDistance )
+			if( en.hp > 0 &&
+				en != e &&
+				(edy = M.abs( ey-fy )) < attackDistance &&
+				(edx = M.abs( ex-fx )) < attackDistance )
 			{
 				en.dx = fx-ex;
-				en.vx = en.dx/(en.dx*en.dx);
-				en.fighting = true;
-				return;
-			}
+				en.vx = en.dx > 0 ? speed : -speed;
 
-			en.fighting = false;
+				if( !en.fighting )
+				{
+					en.fighting = true;
+					en.frame = 0;
+					en.last = now;
+				}
+
+				if( edx < blockDistance &&
+					edy < blockDistance )
+					return;
+			}
+			else
+				en.isHit = en.fighting = false;
 		}
 	}
 
@@ -617,7 +697,14 @@ function moveBy( e, dx, dy )
 
 	if( tl.exit )
 	{
-		level = ++level % levels.length;
+		++level;
+
+		if( level >= levels.length )
+		{
+			alert( "You made it!" );
+			return;
+		}
+
 		levels[level]();
 		alignMap();
 		return;
@@ -664,9 +751,30 @@ function moveBy( e, dx, dy )
 
 function input()
 {
+	if( player.hp < 1 )
+	{
+		if( !player.dead )
+		{
+			player.sprite = "rip";
+			player.frame = 0;
+			player.dead = true;
+		}
+
+		if( pointersLength > 0 ||
+			keysDown[32] ||
+			keysDown[13] )
+		{
+			level = 0;
+			levels[level]();
+			alignMap();
+		}
+
+		return;
+	}
+
 	var dx = 0,
 		dy = 0,
-		step = .03*factor;
+		step = speed*factor;
 
 	if( pointersLength )
 	{
@@ -686,7 +794,10 @@ function input()
 			dy = step;
 
 		if( keysDown[32] )
+		{
 			player.fighting = true;
+			player.frame = 0;
+		}
 	}
 
 	if( dx || dy )
@@ -833,8 +944,7 @@ function scaleSprite( r )
 			if( a == 0 || r > 200 )
 				continue;
 
-			//x.fillStyle = 'rgba('+r+','+g+','+b+','+(alpha/255)+')';
-			x.fillStyle = 'rgba(0,0,0,'+(alpha/255)+')';
+			x.fillStyle = "rgba(0,0,0,"+(alpha/255)+")";
 			x.fillRect( sx, sy, blockSize, blockSize );
 		}
 
@@ -853,11 +963,10 @@ function resize()
 	scaleFactor = M.max( 1, M.round( M.min( width, height )/5/cellSize ) );
 	cellSize *= scaleFactor;
 	attackDistance = cellSize*.7 | 0;
+	blockDistance = cellSize*.4 | 0;
 
 	for( var name in resources )
 		sprites[name] = scaleSprite( resources[name] );
-
-	ctx.fillStyle = "#94d294";
 
 	levels[level]();
 	alignMap();
