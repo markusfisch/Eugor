@@ -140,7 +140,8 @@ var M = Math,
 	entities = [],
 	player,
 	speed = .03,
-	lastHit = 0;
+	lastHit = 0,
+	lastHitFade = 1000;
 
 function reveal( c, r )
 {
@@ -175,7 +176,7 @@ function tile( c, r )
 
 function addEntity( e )
 {
-	e.hp = e.hp || 20;
+	e.hp = e.hp || 50;
 
 	e.fighting =
 	e.isHit = false;
@@ -577,14 +578,16 @@ function drawMap()
 
 function draw()
 {
-	var r = now-lastHit;
+	var hp = player.hp,
+		r = M.round( 148/100*hp ),
+		g = M.round( 210/100*hp ),
+		b = M.round( 148/100*hp ),
+		t = now-lastHit;
 
-	if( r < 500 )
-		r = 148+M.round( 107/500*(500-r) );
-	else
-		r = 148;
+	if( t < lastHitFade )
+		r += M.round( (255-r)/lastHitFade*(lastHitFade-t) );
 
-	ctx.fillStyle = "rgb("+r+",210,148)";
+	ctx.fillStyle = "rgb("+r+","+g+","+b+")";
 	ctx.fillRect( 0, 0, width, height );
 
 	drawMap();
@@ -641,14 +644,10 @@ function calculateVisibleCells()
 function alignMap()
 {
 	if( mapWidth > width )
-		mapLeft = M.max(
-			M.min( 0, centerX-player.x ),
-			width-mapWidth );
+		mapLeft = centerX-player.x;
 
 	if( mapHeight > height )
-		mapTop = M.max(
-			M.min( 0, centerY-player.y ),
-			height-mapHeight );
+		mapTop = centerY-player.y;
 
 	calculateVisibleCells();
 }
@@ -789,7 +788,6 @@ function input()
 	if( player.hp < 1 )
 	{
 		if( pointersLength > 0 ||
-			keysDown[32] ||
 			keysDown[13] )
 		{
 			level = 0;
