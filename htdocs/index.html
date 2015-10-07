@@ -99,7 +99,7 @@ var M = Math,
 		{
 			generate( 32, 24 )
 		},
-		],
+	],
 	atlasWidth,
 	atlas,
 	canvas,
@@ -356,7 +356,9 @@ function generate( rl, el, gameStart )
 	for( var n = el, sl = spaces.length; n--; )
 	{
 		var s
-		while( (s = spaces[M.max( 2, M.random()*sl | 0 )]).stairs )
+
+		while( (s = spaces[M.max( 2, M.random()*sl | 0 )]).stairs );
+
 		s.enemies = s.enemies ? ++s.enemies : 1
 	}
 
